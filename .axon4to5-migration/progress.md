@@ -5,11 +5,11 @@
 
 ## ▶︎ RESUME HERE
 
-- **next:** Discover aggregate candidates (recipe 1/8).
+- **next:** Migrate aggregate `io.axoniq.demo.bikerental.rental.command.Bike`.
 - **recipe-loop:** aggregate (1/8)
 - **recipe:** aggregate
-- **source:** —
-- **verify:** —
+- **source:** io.axoniq.demo.bikerental.rental.command.Bike
+- **verify:** axon4to5-isolatedtest (Bike)
 - **tree:** clean
 - **awaiting-caller:** no
 
@@ -54,7 +54,7 @@ Legend: `pending` · `in-progress` · `done` · `partially-blocked` · `skipped`
 
 | # | recipe | source | status | last-commit | notes |
 |---|--------|--------|--------|-------------|-------|
-| 1 | aggregate | io.axoniq.demo.bikerental.rental.command.Bike | pending | — | — |
+| 1 | aggregate | io.axoniq.demo.bikerental.rental.command.Bike | in-progress | — | — |
 | 2 | aggregate | io.axoniq.demo.bikerental.payment.Payment | pending | — | — |
 
 ---
