@@ -9,7 +9,8 @@ import io.axoniq.demo.bikerental.coreapi.rental.ApproveRequestCommand;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeRequestedEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.RejectRequestCommand;
 import io.axoniq.demo.bikerental.coreapi.rental.RequestRejectedEvent;
-import org.axonframework.test.saga.SagaTestFixture;
+import org.axonframework.test.fixture.AxonTestFixture;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -17,16 +18,17 @@ import java.time.Duration;
 
 class PaymentSagaTest {
 
-    private SagaTestFixture fixture;
+    private AxonTestFixture fixture;
 
     @BeforeEach
     void setUp() {
-        fixture = new SagaTestFixture(PaymentSaga.class);
+        fixture = new AxonTestFixture(PaymentSaga.class);
     }
 
     @Test
     void shouldStartSagaOnBikeRequested() {
-        fixture.givenNoPriorActivity()
+        fixture.given()
+               .noPriorActivity()
                .whenPublishingA(new BikeRequestedEvent("bikeId", "renter", "payRef"))
                .expectDispatchedCommands(new PreparePaymentCommand(10, "payRef"))
                .expectActiveSagas(1);
@@ -62,6 +64,11 @@ class PaymentSagaTest {
                 .whenTimeElapses(Duration.ofSeconds(30))
                 .expectDispatchedCommands(new RejectPaymentCommand("paymentId"));
 
+    }
+
+    @AfterEach
+    void tearDown() {
+        fixture.stop();
     }
 
 }

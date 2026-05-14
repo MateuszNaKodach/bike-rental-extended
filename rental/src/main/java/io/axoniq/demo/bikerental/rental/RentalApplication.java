@@ -3,12 +3,12 @@ package io.axoniq.demo.bikerental.rental;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
 import org.axonframework.common.transaction.TransactionManager;
-import org.axonframework.config.Configuration;
-import org.axonframework.config.ConfigurationScopeAwareProvider;
-import org.axonframework.config.ConfigurerModule;
+import org.axonframework.common.configuration.Configuration;
+import org.axonframework.common.configuration.ConfigurationEnhancer;
+import org.axonframework.common.configuration.ConfigurationScopeAwareProvider;
 import org.axonframework.deadline.DeadlineManager;
 import org.axonframework.deadline.SimpleDeadlineManager;
-import org.axonframework.eventhandling.tokenstore.jpa.TokenEntry;
+import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.axonframework.messaging.StreamableMessageSource;
 import org.axonframework.modelling.saga.repository.jpa.SagaEntry;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +50,7 @@ public class RentalApplication {
     }
 
     @Bean
-    public ConfigurerModule eventProcessingCustomizer() {
+    public ConfigurationEnhancer eventProcessingCustomizer() {
         return configurer -> configurer
                 .eventProcessing()
                 .registerPooledStreamingEventProcessor(

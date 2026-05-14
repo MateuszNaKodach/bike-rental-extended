@@ -1,7 +1,7 @@
 package io.axoniq.demo.bikerental.rental.command;
 
 import org.axonframework.eventsourcing.EventCountSnapshotTriggerDefinition;
-import org.axonframework.eventsourcing.Snapshotter;
+import org.axonframework.eventsourcing.snapshot.api.Snapshotter;
 import org.springframework.stereotype.Component;
 
 @Component("bikeSnapshotDefinition")

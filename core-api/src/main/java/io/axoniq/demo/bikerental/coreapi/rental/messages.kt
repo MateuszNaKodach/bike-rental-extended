@@ -1,20 +1,45 @@
 package io.axoniq.demo.bikerental.coreapi.rental
 
-import org.axonframework.modelling.command.TargetAggregateIdentifier
+import org.axonframework.eventsourcing.annotation.EventTag
+import org.axonframework.messaging.commandhandling.annotation.Command
+import org.axonframework.messaging.eventhandling.annotation.Event
+import org.axonframework.modelling.annotation.TargetEntityId
 
+@Command
 data class RegisterBikeCommand(
-    @TargetAggregateIdentifier val bikeId: String,
+    @TargetEntityId val bikeId: String,
     val bikeType: String,
     val location: String
 )
 
-data class RequestBikeCommand(@TargetAggregateIdentifier val bikeId: String, val renter: String)
-data class ApproveRequestCommand(@TargetAggregateIdentifier val bikeId: String, val renter: String)
-data class RejectRequestCommand(@TargetAggregateIdentifier val bikeId: String, val renter: String)
-data class ReturnBikeCommand(@TargetAggregateIdentifier val bikeId: String, val location: String)
+@Command
+data class RequestBikeCommand(@TargetEntityId val bikeId: String, val renter: String)
 
-data class BikeRegisteredEvent(val bikeId: String, val bikeType: String, val location: String)
-data class BikeRequestedEvent(val bikeId: String, val renter: String, val rentalReference: String)
-data class BikeInUseEvent(val bikeId: String, val renter: String)
-data class RequestRejectedEvent(val bikeId: String)
-data class BikeReturnedEvent(val bikeId: String, val location: String)
+@Command
+data class ApproveRequestCommand(@TargetEntityId val bikeId: String, val renter: String)
+
+@Command
+data class RejectRequestCommand(@TargetEntityId val bikeId: String, val renter: String)
+
+@Command
+data class ReturnBikeCommand(@TargetEntityId val bikeId: String, val location: String)
+
+@Event
+data class BikeRegisteredEvent(@EventTag(key = "Bike")
+val bikeId: String, val bikeType: String, val location: String)
+
+@Event
+data class BikeRequestedEvent(@EventTag(key = "Bike")
+val bikeId: String, val renter: String, val rentalReference: String)
+
+@Event
+data class BikeInUseEvent(@EventTag(key = "Bike")
+val bikeId: String, val renter: String)
+
+@Event
+data class RequestRejectedEvent(@EventTag(key = "Bike")
+val bikeId: String)
+
+@Event
+data class BikeReturnedEvent(@EventTag(key = "Bike")
+val bikeId: String, val location: String)

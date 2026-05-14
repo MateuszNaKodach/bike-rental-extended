@@ -2,9 +2,9 @@ package io.axoniq.demo.bikerental.payment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
-import org.axonframework.config.Configuration;
-import org.axonframework.config.ConfigurerModule;
-import org.axonframework.eventhandling.tokenstore.jpa.TokenEntry;
+import org.axonframework.common.configuration.Configuration;
+import org.axonframework.common.configuration.ConfigurationEnhancer;
+import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,7 +33,7 @@ public class PaymentApplication {
     }
 
     @Bean
-    public ConfigurerModule eventProcessingCustomizer() {
+    public ConfigurationEnhancer eventProcessingCustomizer() {
         return configurer -> configurer
                 .eventProcessing()
                 .registerPooledStreamingEventProcessor(

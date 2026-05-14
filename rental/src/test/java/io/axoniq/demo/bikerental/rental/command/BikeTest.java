@@ -10,32 +10,41 @@ import io.axoniq.demo.bikerental.coreapi.rental.RejectRequestCommand;
 import io.axoniq.demo.bikerental.coreapi.rental.RequestBikeCommand;
 import io.axoniq.demo.bikerental.coreapi.rental.RequestRejectedEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.ReturnBikeCommand;
-import org.axonframework.commandhandling.CommandExecutionException;
-import org.axonframework.test.aggregate.AggregateTestFixture;
-import org.junit.jupiter.api.*;
+import org.axonframework.eventsourcing.configuration.EventSourcedEntityModule;
+import org.axonframework.eventsourcing.configuration.EventSourcingConfigurer;
+import org.axonframework.messaging.commandhandling.CommandExecutionException;
+import org.axonframework.test.fixture.AxonTestFixture;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import static org.axonframework.test.matchers.Matchers.*;
 
 class BikeTest {
 
-    private AggregateTestFixture<Bike> fixture;
+    private AxonTestFixture fixture;
 
     @BeforeEach
     void setUp() {
-        fixture = new AggregateTestFixture<>(Bike.class);
+        fixture = AxonTestFixture.with(EventSourcingConfigurer.create().registerEntity(EventSourcedEntityModule.autodetected(String.class, Bike.class)));
     }
 
     @Test
     void canRegisterBike() {
-        fixture.givenNoPriorActivity()
-               .when(new RegisterBikeCommand("bikeId", "city", "Amsterdam"))
-               .expectEvents(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"));
+        fixture.given()
+               .noPriorActivity()
+               .when()
+               .command(new RegisterBikeCommand("bikeId", "city", "Amsterdam"))
+               .then()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"));
     }
 
     @Test
     void canRequestAvailableBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"))
-               .when(new RequestBikeCommand("bikeId", "rider"))
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"))
+               .when()
+               .command(new RequestBikeCommand("bikeId", "rider"))
                .expectResultMessagePayloadMatching(matches(String.class::isInstance))
                .expectEventsMatching(exactSequenceOf(
                        messageWithPayload(matches((BikeRequestedEvent e) ->
@@ -46,73 +55,96 @@ class BikeTest {
 
     @Test
     void cannotRequestAlreadyRequestedBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"))
-               .when(new RequestBikeCommand("bikeId", "rider"))
-               .expectNoEvents()
-               .expectException(CommandExecutionException.class);
+               .when()
+               .command(new RequestBikeCommand("bikeId", "rider"))
+               .then()
+               .noEvents()
+               .exception(CommandExecutionException.class);
     }
 
     @Test
     void canApproveRequestedBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"))
-               .when(new ApproveRequestCommand("bikeId", "rider"))
-               .expectEvents(new BikeInUseEvent("bikeId", "rider"));
+               .when()
+               .command(new ApproveRequestCommand("bikeId", "rider"))
+               .then()
+               .events(new BikeInUseEvent("bikeId", "rider"));
     }
 
     @Test
     void canRejectRequestedBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"))
-               .when(new RejectRequestCommand("bikeId", "rider"))
-               .expectEvents(new RequestRejectedEvent("bikeId"));
+               .when()
+               .command(new RejectRequestCommand("bikeId", "rider"))
+               .then()
+               .events(new RequestRejectedEvent("bikeId"));
     }
 
     @Test
     void canNotRejectRequestedForWrongRequester() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"))
-               .when(new RejectRequestCommand("bikeId", "otherRider"))
-               .expectSuccessfulHandlerExecution()
-               .expectNoEvents();
+               .when()
+               .command(new RejectRequestCommand("bikeId", "otherRider"))
+               .then()
+               .success()
+               .noEvents();
     }
 
     @Test
     void cannotApproveRequestedForAnotherRider() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"))
-               .when(new ApproveRequestCommand("bikeId", "otherRider"))
-               .expectNoEvents()
-               .expectSuccessfulHandlerExecution();
+               .when()
+               .command(new ApproveRequestCommand("bikeId", "otherRider"))
+               .then()
+               .noEvents()
+               .success();
     }
 
     @Test
     void canReturnedBikeInUse() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"),
                       new BikeInUseEvent("bikeId", "rider"))
-               .when(new ReturnBikeCommand("bikeId", "NewLocation"))
-               .expectEvents(new BikeReturnedEvent("bikeId", "NewLocation"));
+               .when()
+               .command(new ReturnBikeCommand("bikeId", "NewLocation"))
+               .then()
+               .events(new BikeReturnedEvent("bikeId", "NewLocation"));
     }
 
     @Test
     void cannotRequestBikeInUse() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"),
                       new BikeInUseEvent("bikeId", "rider"))
-               .when(new RequestBikeCommand("bikeId", "otherRenter"))
-               .expectNoEvents()
-               .expectException(CommandExecutionException.class);
+               .when()
+               .command(new RequestBikeCommand("bikeId", "otherRenter"))
+               .then()
+               .noEvents()
+               .exception(CommandExecutionException.class);
     }
 
     @Test
     void canRequestReturnedBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"),
                       new BikeInUseEvent("bikeId", "rider"),
                       new BikeReturnedEvent("bikeId", "NewLocation"))
-               .when(new RequestBikeCommand("bikeId", "newRider"))
+               .when()
+               .command(new RequestBikeCommand("bikeId", "newRider"))
                .expectEventsMatching(exactSequenceOf(
                        messageWithPayload(matches((BikeRequestedEvent e) ->
                                                           e.getBikeId().equals("bikeId")
@@ -122,14 +154,21 @@ class BikeTest {
 
     @Test
     void canRequestRejectedBike() {
-        fixture.given(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
+        fixture.given()
+               .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"),
                       new BikeRequestedEvent("bikeId", "rider", "rentalId"),
                       new RequestRejectedEvent("bikeId"))
-               .when(new RequestBikeCommand("bikeId", "newRider"))
+               .when()
+               .command(new RequestBikeCommand("bikeId", "newRider"))
                .expectEventsMatching(exactSequenceOf(
                        messageWithPayload(matches((BikeRequestedEvent e) ->
                                                           e.getBikeId().equals("bikeId")
                                                                   && e.getRenter().equals("newRider"))),
                        andNoMore()));
+    }
+
+    @AfterEach
+    void tearDown() {
+        fixture.stop();
     }
 }

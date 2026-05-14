@@ -2,8 +2,8 @@ package io.axoniq.demo.bikerental.rental.query;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
-import org.axonframework.config.ConfigurerModule;
-import org.axonframework.eventhandling.tokenstore.jpa.TokenEntry;
+import org.axonframework.common.configuration.ConfigurationEnhancer;
+import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -32,7 +32,7 @@ public class RentalQueryApplication {
     }
 
     @Bean
-    public ConfigurerModule eventProcessingCustomizer() {
+    public ConfigurationEnhancer eventProcessingCustomizer() {
         return configurer -> configurer
                 .eventProcessing()
                 .usingPooledStreamingEventProcessors()

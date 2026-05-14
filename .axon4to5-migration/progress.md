@@ -5,9 +5,9 @@
 
 ## ▶︎ RESUME HERE
 
-- **next:** Run OpenRewrite bulk migration pass (pre-step #2).
+- **next:** Discover aggregate candidates (recipe 1/8).
 - **recipe-loop:** aggregate (1/8)
-- **recipe:** —
+- **recipe:** aggregate
 - **source:** —
 - **verify:** —
 - **tree:** clean
@@ -26,9 +26,9 @@ framework=axoniq  configuration=spring  mode=project  execution=inline
 ## OpenRewrite
 
 ```
-status: not-run
-ts: —
-note: —
+status: success
+ts: 2026-05-15T01:47:31+02:00
+note: BUILD SUCCESS — axoniq recipe applied, ~9h estimated time saved
 ```
 
 ---
