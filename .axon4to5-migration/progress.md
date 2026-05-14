@@ -54,6 +54,8 @@ Legend: `pending` · `in-progress` · `done` · `partially-blocked` · `skipped`
 
 | # | recipe | source | status | last-commit | notes |
 |---|--------|--------|--------|-------------|-------|
+| 1 | aggregate | io.axoniq.demo.bikerental.rental.command.Bike | pending | — | — |
+| 2 | aggregate | io.axoniq.demo.bikerental.payment.Payment | pending | — | — |
 
 ---
 
