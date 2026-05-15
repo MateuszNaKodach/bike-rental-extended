@@ -77,26 +77,4 @@
         </plugins>
     </build>
 
-    <profiles>
-        <profile>
-            <id>isolated-Bike</id>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.apache.maven.plugins</groupId>
-                        <artifactId>maven-compiler-plugin</artifactId>
-                        <configuration>
-                            <includes>
-                                <include>io/axoniq/demo/bikerental/rental/command/Bike.java</include>
-                                <include>io/axoniq/demo/bikerental/rental/command/BikeConfiguration.java</include>
-                            </includes>
-                            <testIncludes>
-                                <testInclude>io/axoniq/demo/bikerental/rental/command/BikeTest.java</testInclude>
-                            </testIncludes>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-        </profile>
-    </profiles>
 </project>
