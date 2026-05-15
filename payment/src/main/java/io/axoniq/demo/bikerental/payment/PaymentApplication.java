@@ -2,9 +2,12 @@ package io.axoniq.demo.bikerental.payment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
-import org.axonframework.config.Configuration;
-import org.axonframework.config.ConfigurerModule;
-import org.axonframework.eventhandling.tokenstore.jpa.TokenEntry;
+import io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager;
+import io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine;
+import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
+import org.axonframework.extension.spring.config.EventProcessorDefinition;
+import org.axonframework.messaging.eventhandling.conversion.EventConverter;
+import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -33,14 +36,21 @@ public class PaymentApplication {
     }
 
     @Bean
-    public ConfigurerModule eventProcessingCustomizer() {
-        return configurer -> configurer
-                .eventProcessing()
-                .registerPooledStreamingEventProcessor(
-                        "io.axoniq.demo.bikerental.payment",
-                        Configuration::eventStore,
-                        (c, b) -> b.workerExecutor(workerExecutorService())
-                                   .batchSize(100)
-                );
+    public EventStorageEngine eventStorageEngine(AxonServerConnectionManager connectionManager,
+                                                  EventConverter eventConverter) {
+        return new AggregateBasedAxonServerEventStorageEngine(
+                connectionManager.getConnection(),
+                eventConverter
+        );
+    }
+
+    @Bean
+    public EventProcessorDefinition paymentProcessor() {
+        return EventProcessorDefinition
+                .pooledStreaming("io.axoniq.demo.bikerental.payment")
+                .assigningHandlers(descriptor -> descriptor.beanType().getPackageName()
+                                                           .startsWith("io.axoniq.demo.bikerental.payment"))
+                .customized(c -> c.workerExecutor(workerExecutorService())
+                                  .batchSize(100));
     }
 }

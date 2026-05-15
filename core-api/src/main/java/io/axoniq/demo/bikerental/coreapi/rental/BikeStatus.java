@@ -58,11 +58,11 @@ public class BikeStatus {
     public String description() {
         switch (status) {
             case RENTED:
-                return String.format("Bike %s was rented by %s in %s", bikeId, renter, location);
+                return "Bike %s was rented by %s in %s".formatted(bikeId, renter, location);
             case AVAILABLE:
-                return String.format("Bike %s is available for rental in %s.", bikeId, location);
+                return "Bike %s is available for rental in %s.".formatted(bikeId, location);
             case REQUESTED:
-                return String.format("Bike %s is requested by %s in %s", bikeId, renter, location);
+                return "Bike %s is requested by %s in %s".formatted(bikeId, renter, location);
             default:
                 return "Status unknown";
         }

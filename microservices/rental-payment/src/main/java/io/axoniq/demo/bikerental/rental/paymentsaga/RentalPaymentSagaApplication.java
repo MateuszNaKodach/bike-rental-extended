@@ -1,16 +1,12 @@
 package io.axoniq.demo.bikerental.rental.paymentsaga;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
-import org.axonframework.common.transaction.TransactionManager;
-import org.axonframework.config.Configuration;
-import org.axonframework.config.ConfigurationScopeAwareProvider;
-import org.axonframework.config.ConfigurerModule;
-import org.axonframework.deadline.DeadlineManager;
-import org.axonframework.deadline.SimpleDeadlineManager;
-import org.axonframework.eventhandling.tokenstore.jpa.TokenEntry;
-import org.axonframework.messaging.StreamableMessageSource;
-import org.axonframework.modelling.saga.repository.jpa.SagaEntry;
+import io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager;
+import io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine;
+import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
+import org.axonframework.extension.spring.config.EventProcessorDefinition;
+import org.axonframework.messaging.eventhandling.conversion.EventConverter;
+import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -20,7 +16,8 @@ import org.springframework.context.annotation.Bean;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-@EntityScan(basePackageClasses = {BikeStatus.class, SagaEntry.class, TokenEntry.class})
+@EntityScan(basePackageClasses = {TokenEntry.class},
+            basePackages = {"io.axoniq.demo.bikerental.rental.paymentsaga"})
 @SpringBootApplication
 public class RentalPaymentSagaApplication {
 
@@ -28,13 +25,13 @@ public class RentalPaymentSagaApplication {
         SpringApplication.run(RentalPaymentSagaApplication.class, args);
     }
 
-    @Bean(destroyMethod = "")
-    public DeadlineManager deadlineManager(TransactionManager transactionManager,
-                                           Configuration config) {
-        return SimpleDeadlineManager.builder()
-                                    .transactionManager(transactionManager)
-                                    .scopeAwareProvider(new ConfigurationScopeAwareProvider(config))
-                                    .build();
+    @Bean
+    public EventStorageEngine eventStorageEngine(AxonServerConnectionManager connectionManager,
+                                                  EventConverter eventConverter) {
+        return new AggregateBasedAxonServerEventStorageEngine(
+                connectionManager.getConnection(),
+                eventConverter
+        );
     }
 
     @Bean(destroyMethod = "shutdown")
@@ -46,23 +43,25 @@ public class RentalPaymentSagaApplication {
     public void configureSerializers(ObjectMapper objectMapper) {
         objectMapper.activateDefaultTyping(objectMapper.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
     }
+
     @Bean
-    public ConfigurerModule eventProcessingCustomizer() {
-        return configurer -> configurer
-                .eventProcessing()
-                .registerPooledStreamingEventProcessor(
-                        "PaymentSagaProcessor",
-                        Configuration::eventStore,
-                        (c, b) -> b.workerExecutor(workerExecutorService())
-                                   .batchSize(100)
-                                   .initialToken(StreamableMessageSource::createHeadToken)
-                )
-                .registerPooledStreamingEventProcessor(
-                        "io.axoniq.demo.bikerental.payment",
-                        Configuration::eventStore,
-                        (c, b) -> b.workerExecutor(workerExecutorService())
-                                   .batchSize(100)
-                );
+    public EventProcessorDefinition paymentSagaProcessor() {
+        return EventProcessorDefinition
+                .pooledStreaming("PaymentSagaProcessor")
+                .assigningHandlers(descriptor -> descriptor.beanType().getPackageName()
+                                                           .startsWith("io.axoniq.demo.bikerental.rental.paymentsaga"))
+                // TODO(af5): initialToken(StreamableMessageSource::createHeadToken) removed — AF5 TrackingTokenSource.latestToken() requires ProcessingContext; processor will replay from beginning on first start
+                .customized(c -> c.workerExecutor(workerExecutorService())
+                                  .batchSize(100));
     }
 
+    @Bean
+    public EventProcessorDefinition paymentProcessor() {
+        return EventProcessorDefinition
+                .pooledStreaming("io.axoniq.demo.bikerental.payment")
+                .assigningHandlers(descriptor -> descriptor.beanType().getPackageName()
+                                                           .startsWith("io.axoniq.demo.bikerental.payment"))
+                .customized(c -> c.workerExecutor(workerExecutorService())
+                                  .batchSize(100));
+    }
 }
