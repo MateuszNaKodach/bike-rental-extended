@@ -2,7 +2,11 @@ package io.axoniq.demo.bikerental.payment;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
+import io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager;
+import io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine;
+import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
 import org.axonframework.extension.spring.config.EventProcessorDefinition;
+import org.axonframework.messaging.eventhandling.conversion.EventConverter;
 import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -29,6 +33,15 @@ public class PaymentApplication {
     @Autowired
     public void configureSerializers(ObjectMapper objectMapper) {
         objectMapper.activateDefaultTyping(objectMapper.getPolymorphicTypeValidator(), ObjectMapper.DefaultTyping.JAVA_LANG_OBJECT);
+    }
+
+    @Bean
+    public EventStorageEngine eventStorageEngine(AxonServerConnectionManager connectionManager,
+                                                  EventConverter eventConverter) {
+        return new AggregateBasedAxonServerEventStorageEngine(
+                connectionManager.getConnection(),
+                eventConverter
+        );
     }
 
     @Bean

@@ -3,7 +3,11 @@ package io.axoniq.demo.bikerental.rental;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
 import io.axoniq.demo.bikerental.rental.paymentsaga.PaymentState;
+import io.axoniq.framework.axonserver.connector.api.AxonServerConnectionManager;
+import io.axoniq.framework.axonserver.connector.event.AggregateBasedAxonServerEventStorageEngine;
+import org.axonframework.eventsourcing.eventstore.EventStorageEngine;
 import org.axonframework.extension.spring.config.EventProcessorDefinition;
+import org.axonframework.messaging.eventhandling.conversion.EventConverter;
 import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
@@ -22,8 +26,14 @@ public class RentalApplication {
         SpringApplication.run(RentalApplication.class, args);
     }
 
-    // TODO(af5-saga): migrate DeadlineManager — SimpleDeadlineManager/ConfigurationScopeAwareProvider removed in AF5.
-    // Replace with the AF5 deadline mechanism once the saga recipe is applied to PaymentSaga.
+    @Bean
+    public EventStorageEngine eventStorageEngine(AxonServerConnectionManager connectionManager,
+                                                  EventConverter eventConverter) {
+        return new AggregateBasedAxonServerEventStorageEngine(
+                connectionManager.getConnection(),
+                eventConverter
+        );
+    }
 
     @Bean(destroyMethod = "shutdown")
     public ScheduledExecutorService workerExecutorService() {
