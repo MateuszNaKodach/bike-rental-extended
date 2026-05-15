@@ -4,6 +4,7 @@ import io.axoniq.demo.bikerental.coreapi.payment.PaymentConfirmedEvent;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentPreparedEvent;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentRejectedEvent;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
+import org.axonframework.messaging.core.annotation.Namespace;
 import org.axonframework.messaging.eventhandling.annotation.EventHandler;
 import org.axonframework.messaging.queryhandling.QueryUpdateEmitter;
 import org.axonframework.messaging.queryhandling.annotation.QueryHandler;
@@ -13,16 +14,14 @@ import static io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus.Status.APP
 import static io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus.Status.PENDING;
 import static io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus.Status.REJECTED;
 
+@Namespace("io.axoniq.demo.bikerental.payment")
 @Component
 public class PaymentStatusProjection {
 
     private final PaymentStatusRepository paymentStatusRepository;
-    private final QueryUpdateEmitter updateEmitter;
 
-    public PaymentStatusProjection(PaymentStatusRepository paymentStatusRepository,
-                                   QueryUpdateEmitter updateEmitter) {
+    public PaymentStatusProjection(PaymentStatusRepository paymentStatusRepository) {
         this.paymentStatusRepository = paymentStatusRepository;
-        this.updateEmitter = updateEmitter;
     }
 
     @QueryHandler(queryName = "getStatus")
@@ -49,7 +48,7 @@ public class PaymentStatusProjection {
     }
 
     @EventHandler
-    public void handle(PaymentPreparedEvent event) {
+    public void handle(PaymentPreparedEvent event, QueryUpdateEmitter updateEmitter) {
         paymentStatusRepository.save(new PaymentStatus(event.getPaymentId(), event.getAmount(), event.getPaymentReference()));
         updateEmitter.emit(String.class, event.getPaymentReference()::equals, event.getPaymentId());
     }
