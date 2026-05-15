@@ -2,9 +2,9 @@ package io.axoniq.demo.bikerental.rental;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
+import io.axoniq.demo.bikerental.rental.paymentsaga.PaymentState;
 import org.axonframework.extension.spring.config.EventProcessorDefinition;
 import org.axonframework.messaging.eventhandling.processing.streaming.token.store.jpa.TokenEntry;
-// TODO(af5-saga): import org.axonframework.modelling.saga.repository.jpa.SagaEntry — SagaEntry package moved in AF5; restore when saga recipe is applied
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -14,8 +14,7 @@ import org.springframework.context.annotation.Bean;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
-// TODO(af5-saga): restore SagaEntry.class in @EntityScan when saga recipe is applied
-@EntityScan(basePackageClasses = {BikeStatus.class, TokenEntry.class})
+@EntityScan(basePackageClasses = {BikeStatus.class, TokenEntry.class, PaymentState.class})
 @SpringBootApplication
 public class RentalApplication {
 
