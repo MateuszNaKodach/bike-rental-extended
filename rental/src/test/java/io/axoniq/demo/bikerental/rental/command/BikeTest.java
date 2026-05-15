@@ -18,7 +18,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.axonframework.test.matchers.Matchers.*;
 
 class BikeTest {
 
@@ -45,12 +44,12 @@ class BikeTest {
                .events(new BikeRegisteredEvent("bikeId", "city", "Amsterdam"))
                .when()
                .command(new RequestBikeCommand("bikeId", "rider"))
-               .expectResultMessagePayloadMatching(matches(String.class::isInstance))
-               .expectEventsMatching(exactSequenceOf(
-                       messageWithPayload(matches((BikeRequestedEvent e) ->
-                                                          e.getBikeId().equals("bikeId")
-                                                                  && e.getRenter().equals("rider"))),
-                       andNoMore()));
+               .then()
+               .resultMessagePayloadSatisfies(String.class, s -> {})
+               .eventsMatch(events -> events.size() == 1
+                       && events.get(0).payload() instanceof BikeRequestedEvent e
+                       && e.getBikeId().equals("bikeId")
+                       && e.getRenter().equals("rider"));
     }
 
     @Test
@@ -145,11 +144,11 @@ class BikeTest {
                       new BikeReturnedEvent("bikeId", "NewLocation"))
                .when()
                .command(new RequestBikeCommand("bikeId", "newRider"))
-               .expectEventsMatching(exactSequenceOf(
-                       messageWithPayload(matches((BikeRequestedEvent e) ->
-                                                          e.getBikeId().equals("bikeId")
-                                                                  && e.getRenter().equals("newRider"))),
-                       andNoMore()));
+               .then()
+               .eventsMatch(events -> events.size() == 1
+                       && events.get(0).payload() instanceof BikeRequestedEvent e
+                       && e.getBikeId().equals("bikeId")
+                       && e.getRenter().equals("newRider"));
     }
 
     @Test
@@ -160,11 +159,11 @@ class BikeTest {
                       new RequestRejectedEvent("bikeId"))
                .when()
                .command(new RequestBikeCommand("bikeId", "newRider"))
-               .expectEventsMatching(exactSequenceOf(
-                       messageWithPayload(matches((BikeRequestedEvent e) ->
-                                                          e.getBikeId().equals("bikeId")
-                                                                  && e.getRenter().equals("newRider"))),
-                       andNoMore()));
+               .then()
+               .eventsMatch(events -> events.size() == 1
+                       && events.get(0).payload() instanceof BikeRequestedEvent e
+                       && e.getBikeId().equals("bikeId")
+                       && e.getRenter().equals("newRider"));
     }
 
     @AfterEach

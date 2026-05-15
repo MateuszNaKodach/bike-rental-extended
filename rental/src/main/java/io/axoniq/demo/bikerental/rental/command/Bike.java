@@ -3,6 +3,7 @@ package io.axoniq.demo.bikerental.rental.command;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.axoniq.demo.bikerental.coreapi.rental.ApproveRequestCommand;
+import org.axonframework.extension.spring.stereotype.EventSourced;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeInUseEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeRegisteredEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeRequestedEvent;
@@ -14,7 +15,6 @@ import io.axoniq.demo.bikerental.coreapi.rental.RequestRejectedEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.ReturnBikeCommand;
 import org.axonframework.eventsourcing.annotation.EventSourcingHandler;
 import org.axonframework.eventsourcing.annotation.reflection.EntityCreator;
-import org.axonframework.extension.spring.stereotype.EventSourced;
 import org.axonframework.messaging.commandhandling.CommandExecutionException;
 import org.axonframework.messaging.commandhandling.annotation.CommandHandler;
 import org.axonframework.messaging.eventhandling.gateway.EventAppender;
@@ -22,7 +22,6 @@ import org.axonframework.messaging.eventhandling.gateway.EventAppender;
 import java.util.Objects;
 import java.util.UUID;
 
-// TODO #LLM: reconfigure snapshot trigger (AF4 had snapshotTriggerDefinition = "bikeSnapshotDefinition")
 @EventSourced(tagKey = "Bike", idType = String.class)
 public class Bike {
 
@@ -50,7 +49,7 @@ public class Bike {
     }
 
     @CommandHandler
-    public void handle(RegisterBikeCommand command, EventAppender eventAppender) {
+    public static void handle(RegisterBikeCommand command, EventAppender eventAppender) {
         eventAppender.append(new BikeRegisteredEvent(command.getBikeId(), command.getBikeType(), command.getLocation()));
     }
 
