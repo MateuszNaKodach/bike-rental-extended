@@ -1,6 +1,9 @@
 package io.axoniq.demo.bikerental.payment;
 
 import io.axoniq.demo.bikerental.coreapi.payment.ConfirmPaymentCommand;
+import io.axoniq.demo.bikerental.coreapi.payment.GetAllPaymentsQuery;
+import io.axoniq.demo.bikerental.coreapi.payment.GetPaymentIdQuery;
+import io.axoniq.demo.bikerental.coreapi.payment.GetPaymentStatusQuery;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
 import io.axoniq.demo.bikerental.coreapi.payment.RejectPaymentCommand;
 import org.axonframework.messaging.commandhandling.gateway.CommandGateway;
@@ -24,12 +27,12 @@ public class PaymentController {
 
     @GetMapping("/status/{paymentId}")
     public CompletableFuture<PaymentStatus> getStatus(@PathVariable("paymentId") String paymentId) {
-        return queryGateway.query("getStatus", paymentId, PaymentStatus.class);
+        return queryGateway.query(new GetPaymentStatusQuery(paymentId), PaymentStatus.class);
     }
 
     @GetMapping("/findPayment")
     public CompletableFuture<String> findPaymentId(@RequestParam("reference") String paymentReference) {
-        return queryGateway.query("getPaymentId", paymentReference, String.class);
+        return queryGateway.query(new GetPaymentIdQuery(paymentReference), String.class);
     }
 
     @PostMapping("/acceptPayment")
@@ -44,7 +47,7 @@ public class PaymentController {
 
     @GetMapping("/status")
     public Flux<PaymentStatus> getStatus(@RequestParam(value = "status", required = false) PaymentStatus.Status status) {
-        return Flux.from(queryGateway.streamingQuery("getAllPayments", status, PaymentStatus.class));
+        return Flux.from(queryGateway.streamingQuery(new GetAllPaymentsQuery(status), PaymentStatus.class));
     }
 
 }

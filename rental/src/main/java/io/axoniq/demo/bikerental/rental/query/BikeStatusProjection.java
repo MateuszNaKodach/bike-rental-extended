@@ -5,6 +5,9 @@ import io.axoniq.demo.bikerental.coreapi.rental.BikeRegisteredEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeRequestedEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeReturnedEvent;
 import io.axoniq.demo.bikerental.coreapi.rental.BikeStatus;
+import io.axoniq.demo.bikerental.coreapi.rental.FindAllBikesQuery;
+import io.axoniq.demo.bikerental.coreapi.rental.FindAvailableBikesQuery;
+import io.axoniq.demo.bikerental.coreapi.rental.FindBikeByIdQuery;
 import io.axoniq.demo.bikerental.coreapi.rental.RentalStatus;
 import io.axoniq.demo.bikerental.coreapi.rental.RequestRejectedEvent;
 import org.axonframework.messaging.core.QualifiedName;
@@ -40,7 +43,7 @@ public class BikeStatusProjection {
                             })
                             .ifPresent(bs -> {
                                 updateEmitter.emit(new QualifiedName("findAll"), q -> true, bs);
-                                updateEmitter.emit(String.class, event.getBikeId()::equals, bs);
+                                updateEmitter.emit(FindBikeByIdQuery.class, q -> q.getBikeId().equals(event.getBikeId()), bs);
                             });
     }
 
@@ -53,7 +56,7 @@ public class BikeStatusProjection {
                             })
                             .ifPresent(bs -> {
                                 updateEmitter.emit(new QualifiedName("findAll"), q -> true, bs);
-                                updateEmitter.emit(String.class, event.getBikeId()::equals, bs);
+                                updateEmitter.emit(FindBikeByIdQuery.class, q -> q.getBikeId().equals(event.getBikeId()), bs);
                             });
     }
 
@@ -66,7 +69,7 @@ public class BikeStatusProjection {
                             })
                             .ifPresent(bs -> {
                                 updateEmitter.emit(new QualifiedName("findAll"), q -> true, bs);
-                                updateEmitter.emit(String.class, event.getBikeId()::equals, bs);
+                                updateEmitter.emit(FindBikeByIdQuery.class, q -> q.getBikeId().equals(event.getBikeId()), bs);
                             });
     }
 
@@ -79,22 +82,22 @@ public class BikeStatusProjection {
                             })
                             .ifPresent(bs -> {
                                 updateEmitter.emit(new QualifiedName("findAll"), q -> true, bs);
-                                updateEmitter.emit(String.class, event.getBikeId()::equals, bs);
+                                updateEmitter.emit(FindBikeByIdQuery.class, q -> q.getBikeId().equals(event.getBikeId()), bs);
                             });
     }
 
     @QueryHandler(queryName = "findAll")
-    public Iterable<BikeStatus> findAll() {
+    public Iterable<BikeStatus> findAll(FindAllBikesQuery query) {
         return bikeStatusRepository.findAll();
     }
 
     @QueryHandler(queryName = "findAvailable")
-    public Iterable<BikeStatus> findAvailable(String bikeType) {
-        return bikeStatusRepository.findAllByBikeTypeAndStatus(bikeType, RentalStatus.AVAILABLE);
+    public Iterable<BikeStatus> findAvailable(FindAvailableBikesQuery query) {
+        return bikeStatusRepository.findAllByBikeTypeAndStatus(query.getBikeType(), RentalStatus.AVAILABLE);
     }
 
     @QueryHandler(queryName = "findOne")
-    public BikeStatus findOne(String bikeId) {
-        return bikeStatusRepository.findById(bikeId).orElse(null);
+    public BikeStatus findOne(FindBikeByIdQuery query) {
+        return bikeStatusRepository.findById(query.getBikeId()).orElse(null);
     }
 }

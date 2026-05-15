@@ -1,13 +1,13 @@
 package io.axoniq.demo.bikerental.rental.ui;
 
 import io.axoniq.demo.bikerental.coreapi.payment.ConfirmPaymentCommand;
+import io.axoniq.demo.bikerental.coreapi.payment.GetAllPaymentsQuery;
+import io.axoniq.demo.bikerental.coreapi.payment.GetPaymentIdQuery;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentStatus;
 import io.axoniq.demo.bikerental.coreapi.payment.RejectPaymentCommand;
 import io.axoniq.demo.bikerental.coreapi.rental.*;
 import org.axonframework.messaging.commandhandling.gateway.CommandGateway;
 import org.axonframework.messaging.queryhandling.gateway.QueryGateway;
-import org.axonframework.messaging.responsetypes.ResponseTypes;
-import org.axonframework.messaging.queryhandling.SubscriptionQueryResult;
 import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Flux;
@@ -51,22 +51,14 @@ public class RentalController {
 
     @GetMapping("/bikes")
     public CompletableFuture<List<BikeStatus>> findAll() {
-        return queryGateway.query(FIND_ALL_QUERY, null, ResponseTypes.multipleInstancesOf(BikeStatus.class));
+        return queryGateway.queryMany(new FindAllBikesQuery(), BikeStatus.class);
     }
 
     @GetMapping("/bikeUpdates")
     public Flux<ServerSentEvent<String>> subscribeToAllUpdates() {
-        SubscriptionQueryResult<List<BikeStatus>, BikeStatus> subscriptionQueryResult = queryGateway.subscriptionQuery(
-                FIND_ALL_QUERY,
-                null,
-                ResponseTypes.multipleInstancesOf(BikeStatus.class),
-                ResponseTypes.instanceOf(BikeStatus.class));
-        return subscriptionQueryResult.initialResult()
-                                      .flatMapMany(Flux::fromIterable)
-                                      .concatWith(subscriptionQueryResult.updates())
-                                      .doFinally(s -> subscriptionQueryResult.close())
-                                      .map(BikeStatus::description)
-                                      .map(description -> ServerSentEvent.builder(description).build());
+        return Flux.from(queryGateway.subscriptionQuery(new FindAllBikesQuery(), BikeStatus.class))
+                   .map(BikeStatus::description)
+                   .map(description -> ServerSentEvent.builder(description).build());
     }
 
     /*
@@ -75,30 +67,15 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
  */
     @GetMapping("/bikeUpdatesJson")
     public Flux<ServerSentEvent<BikeStatus>> subscribeToAllUpdatesJson() {
-        SubscriptionQueryResult<List<BikeStatus>, BikeStatus> subscriptionQueryResult = queryGateway.subscriptionQuery(
-                FIND_ALL_QUERY,
-                null,
-                ResponseTypes.multipleInstancesOf(BikeStatus.class),
-                ResponseTypes.instanceOf(BikeStatus.class));
-        return subscriptionQueryResult.initialResult()
-                                      .flatMapMany(Flux::fromIterable)
-                                      .concatWith(subscriptionQueryResult.updates())
-                                      .doFinally(s -> subscriptionQueryResult.close())
-                                      .map(description -> ServerSentEvent.builder(description).build());
+        return Flux.from(queryGateway.subscriptionQuery(new FindAllBikesQuery(), BikeStatus.class))
+                   .map(bikeStatus -> ServerSentEvent.builder(bikeStatus).build());
     }
 
     @GetMapping("/bikeUpdates/{bikeId}")
     public Flux<ServerSentEvent<String>> subscribeToBikeUpdates(@PathVariable("bikeId") String bikeId) {
-        SubscriptionQueryResult<BikeStatus, BikeStatus> subscriptionQueryResult = queryGateway.subscriptionQuery(
-                FIND_ONE_QUERY,
-                bikeId,
-                BikeStatus.class,
-                BikeStatus.class);
-        return subscriptionQueryResult.initialResult()
-                                      .concatWith(subscriptionQueryResult.updates())
-                                      .doFinally(s -> subscriptionQueryResult.close())
-                                      .map(BikeStatus::description)
-                                      .map(description -> ServerSentEvent.builder(description).build());
+        return Flux.from(queryGateway.subscriptionQuery(new FindBikeByIdQuery(bikeId), BikeStatus.class))
+                   .map(BikeStatus::description)
+                   .map(description -> ServerSentEvent.builder(description).build());
     }
 
     @PostMapping("/requestBike")
@@ -114,18 +91,14 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
 
     @GetMapping("findPayment")
     public Mono<String> getPaymentId(@RequestParam("reference") String paymentRef) {
-        SubscriptionQueryResult<String, String> queryResult = queryGateway.subscriptionQuery("getPaymentId",
-                                                                                             paymentRef,
-                                                                                             String.class,
-                                                                                             String.class);
-        return queryResult.initialResult().concatWith(queryResult.updates())
-                          .filter(Objects::nonNull)
-                          .next();
+        return Flux.from(queryGateway.subscriptionQuery(new GetPaymentIdQuery(paymentRef), String.class))
+                   .filter(Objects::nonNull)
+                   .next();
     }
 
     @GetMapping("pendingPayments")
-    public CompletableFuture<PaymentStatus> getPendingPayments() {
-        return queryGateway.query("getAllPayments", PaymentStatus.Status.PENDING, PaymentStatus.class);
+    public CompletableFuture<List<PaymentStatus>> getPendingPayments() {
+        return queryGateway.queryMany(new GetAllPaymentsQuery(PaymentStatus.Status.PENDING), PaymentStatus.class);
     }
 
     @PostMapping("acceptPayment")
@@ -141,27 +114,14 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
 
     @GetMapping(value = "watch", produces = "text/event-stream")
     public Flux<String> watchAll() {
-        SubscriptionQueryResult<List<BikeStatus>, BikeStatus> subscriptionQuery = queryGateway.subscriptionQuery(
-                FIND_ALL_QUERY,
-                null,
-                ResponseTypes.multipleInstancesOf(BikeStatus.class),
-                ResponseTypes.instanceOf(BikeStatus.class));
-        return subscriptionQuery.initialResult()
-                                .flatMapMany(Flux::fromIterable)
-                                .concatWith(subscriptionQuery.updates())
-                                .map(bs -> bs.getBikeId() + " -> " + bs.description());
+        return Flux.from(queryGateway.subscriptionQuery(new FindAllBikesQuery(), BikeStatus.class))
+                   .map(bs -> bs.getBikeId() + " -> " + bs.description());
     }
 
     @GetMapping(value = "watch/{bikeId}", produces = "text/event-stream")
     public Flux<String> watchBike(@PathVariable("bikeId") String bikeId) {
-        SubscriptionQueryResult<BikeStatus, BikeStatus> subscriptionQuery = queryGateway.subscriptionQuery(
-                FIND_ONE_QUERY,
-                bikeId,
-                ResponseTypes.instanceOf(BikeStatus.class),
-                ResponseTypes.instanceOf(BikeStatus.class));
-        return subscriptionQuery.initialResult()
-                                .concatWith(subscriptionQuery.updates())
-                                .map(bs -> bs.getBikeId() + " -> " + bs.description());
+        return Flux.from(queryGateway.subscriptionQuery(new FindBikeByIdQuery(bikeId), BikeStatus.class))
+                   .map(bs -> bs.getBikeId() + " -> " + bs.description());
     }
 
 
@@ -181,7 +141,7 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
 
     @GetMapping("/bikes/{bikeId}")
     public CompletableFuture<BikeStatus> findStatus(@PathVariable("bikeId") String bikeId) {
-        return queryGateway.query(FIND_ONE_QUERY, bikeId, BikeStatus.class);
+        return queryGateway.query(new FindBikeByIdQuery(bikeId), BikeStatus.class);
     }
 
     private Mono<String> executeRentalCycle(String bikeType, String renter, int abandonPaymentFactor, int delay) {
@@ -210,7 +170,7 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
     }
 
     private CompletableFuture<String> selectRandomAvailableBike(String bikeType) {
-        return queryGateway.query("findAvailable", bikeType, ResponseTypes.multipleInstancesOf(BikeStatus.class))
+        return queryGateway.queryMany(new FindAvailableBikesQuery(bikeType), BikeStatus.class)
                            .thenApply(this::pickRandom)
                            .thenApply(BikeStatus::getBikeId);
     }
@@ -220,32 +180,22 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
     }
 
     private CompletableFuture<String> whenBikeUnlocked(String bikeId) {
-        SubscriptionQueryResult<BikeStatus, BikeStatus> queryResult = queryGateway.subscriptionQuery(FIND_ONE_QUERY,
-                                                                                                     bikeId,
-                                                                                                     BikeStatus.class,
-                                                                                                     BikeStatus.class);
-        return queryResult.initialResult().concatWith(queryResult.updates())
-                          .any(status -> status.getStatus() == RentalStatus.RENTED)
-                          .map(s -> bikeId)
-                          .doOnNext(n -> queryResult.close())
-                          .toFuture();
+        return Flux.from(queryGateway.subscriptionQuery(new FindBikeByIdQuery(bikeId), BikeStatus.class))
+                   .any(status -> status.getStatus() == RentalStatus.RENTED)
+                   .map(s -> bikeId)
+                   .toFuture();
     }
 
     private CompletableFuture<String> executePayment(String bikeId, String paymentRef, int abandonPaymentFactor) {
         if (abandonPaymentFactor > 0 && ThreadLocalRandom.current().nextInt(abandonPaymentFactor) == 0) {
             return CompletableFuture.failedFuture(new IllegalStateException("Customer refused to pay"));
         }
-        SubscriptionQueryResult<String, String> queryResult = queryGateway.subscriptionQuery("getPaymentId",
-                                                                                             paymentRef,
-                                                                                             String.class,
-                                                                                             String.class);
-        return queryResult.initialResult().concatWith(queryResult.updates())
-                          .filter(Objects::nonNull)
-                          .doOnNext(n -> queryResult.close())
-                          .next()
-                          .flatMap(paymentId -> Mono.fromFuture(commandGateway.send(new ConfirmPaymentCommand(paymentId), Void.class)))
-                          .map(o -> bikeId)
-                          .toFuture();
+        return Flux.from(queryGateway.subscriptionQuery(new GetPaymentIdQuery(paymentRef), String.class))
+                   .filter(Objects::nonNull)
+                   .next()
+                   .flatMap(paymentId -> Mono.fromFuture(commandGateway.send(new ConfirmPaymentCommand(paymentId), Void.class)))
+                   .map(o -> bikeId)
+                   .toFuture();
     }
 
     private String randomRenter() {

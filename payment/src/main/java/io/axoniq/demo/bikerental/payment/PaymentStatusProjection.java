@@ -1,5 +1,8 @@
 package io.axoniq.demo.bikerental.payment;
 
+import io.axoniq.demo.bikerental.coreapi.payment.GetAllPaymentsQuery;
+import io.axoniq.demo.bikerental.coreapi.payment.GetPaymentIdQuery;
+import io.axoniq.demo.bikerental.coreapi.payment.GetPaymentStatusQuery;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentConfirmedEvent;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentPreparedEvent;
 import io.axoniq.demo.bikerental.coreapi.payment.PaymentRejectedEvent;
@@ -25,32 +28,27 @@ public class PaymentStatusProjection {
     }
 
     @QueryHandler(queryName = "getStatus")
-    public PaymentStatus getStatus(String paymentId) {
-        return paymentStatusRepository.findById(paymentId).orElse(null);
+    public PaymentStatus getStatus(GetPaymentStatusQuery query) {
+        return paymentStatusRepository.findById(query.getPaymentId()).orElse(null);
     }
 
     @QueryHandler(queryName = "getPaymentId")
-    public String getPaymentId(String paymentReference) {
-        return paymentStatusRepository.findByReferenceAndStatus(paymentReference, PENDING).map(PaymentStatus::getId).orElse(null);
+    public String getPaymentId(GetPaymentIdQuery query) {
+        return paymentStatusRepository.findByReferenceAndStatus(query.getPaymentReference(), PENDING).map(PaymentStatus::getId).orElse(null);
     }
 
     @QueryHandler(queryName = "getAllPayments")
-    public Iterable<PaymentStatus> findByStatus(PaymentStatus.Status status) {
-        if (status == null) {
+    public Iterable<PaymentStatus> findByStatus(GetAllPaymentsQuery query) {
+        if (query.getStatus() == null) {
             return paymentStatusRepository.findAll();
         }
-        return paymentStatusRepository.findAllByStatus(status);
-    }
-
-    @QueryHandler(queryName = "getAllPayments")
-    public Iterable<PaymentStatus> findAll() {
-        return paymentStatusRepository.findAll();
+        return paymentStatusRepository.findAllByStatus(query.getStatus());
     }
 
     @EventHandler
     public void handle(PaymentPreparedEvent event, QueryUpdateEmitter updateEmitter) {
         paymentStatusRepository.save(new PaymentStatus(event.getPaymentId(), event.getAmount(), event.getPaymentReference()));
-        updateEmitter.emit(String.class, event.getPaymentReference()::equals, event.getPaymentId());
+        updateEmitter.emit(GetPaymentIdQuery.class, q -> q.getPaymentReference().equals(event.getPaymentReference()), event.getPaymentId());
     }
 
     @EventHandler
