@@ -86,17 +86,17 @@ public class BikeStatusProjection {
                             });
     }
 
-    @QueryHandler(queryName = "findAll")
+    @QueryHandler
     public Iterable<BikeStatus> findAll(FindAllBikesQuery query) {
         return bikeStatusRepository.findAll();
     }
 
-    @QueryHandler(queryName = "findAvailable")
+    @QueryHandler
     public Iterable<BikeStatus> findAvailable(FindAvailableBikesQuery query) {
         return bikeStatusRepository.findAllByBikeTypeAndStatus(query.getBikeType(), RentalStatus.AVAILABLE);
     }
 
-    @QueryHandler(queryName = "findOne")
+    @QueryHandler
     public BikeStatus findOne(FindBikeByIdQuery query) {
         return bikeStatusRepository.findById(query.getBikeId()).orElse(null);
     }

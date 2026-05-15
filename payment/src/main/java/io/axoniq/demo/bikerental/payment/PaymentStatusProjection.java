@@ -27,17 +27,17 @@ public class PaymentStatusProjection {
         this.paymentStatusRepository = paymentStatusRepository;
     }
 
-    @QueryHandler(queryName = "getStatus")
+    @QueryHandler
     public PaymentStatus getStatus(GetPaymentStatusQuery query) {
         return paymentStatusRepository.findById(query.getPaymentId()).orElse(null);
     }
 
-    @QueryHandler(queryName = "getPaymentId")
+    @QueryHandler
     public String getPaymentId(GetPaymentIdQuery query) {
         return paymentStatusRepository.findByReferenceAndStatus(query.getPaymentReference(), PENDING).map(PaymentStatus::getId).orElse(null);
     }
 
-    @QueryHandler(queryName = "getAllPayments")
+    @QueryHandler
     public Iterable<PaymentStatus> findByStatus(GetAllPaymentsQuery query) {
         if (query.getStatus() == null) {
             return paymentStatusRepository.findAll();
