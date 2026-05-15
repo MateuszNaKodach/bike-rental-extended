@@ -44,7 +44,7 @@ public class RentalController {
         CompletableFuture<Void> all = CompletableFuture.completedFuture(null);
         for (int i = 0; i < bikeCount; i++) {
             all = CompletableFuture.allOf(all,
-                                          commandGateway.send(new RegisterBikeCommand(UUID.randomUUID().toString(), bikeType, randomLocation())));
+                                          commandGateway.send(new RegisterBikeCommand(UUID.randomUUID().toString(), bikeType, randomLocation()), Void.class));
         }
         return all;
     }
@@ -104,12 +104,12 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
     @PostMapping("/requestBike")
     public CompletableFuture<String> requestBike(@RequestParam("bikeId") String bikeId,
                                                  @RequestParam(value = "renter", required = false) String renter) {
-        return commandGateway.send(new RequestBikeCommand(bikeId, renter != null ? renter : randomRenter()));
+        return commandGateway.send(new RequestBikeCommand(bikeId, renter != null ? renter : randomRenter()), String.class);
     }
 
     @PostMapping("/returnBike")
-    public CompletableFuture<String> returnBike(@RequestParam("bikeId") String bikeId) {
-        return commandGateway.send(new ReturnBikeCommand(bikeId, randomLocation()));
+    public CompletableFuture<Void> returnBike(@RequestParam("bikeId") String bikeId) {
+        return commandGateway.send(new ReturnBikeCommand(bikeId, randomLocation()), Void.class);
     }
 
     @GetMapping("findPayment")
@@ -130,12 +130,12 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
 
     @PostMapping("acceptPayment")
     public CompletableFuture<Void> acceptPayment(@RequestParam("id") String paymentId) {
-        return commandGateway.send(new ConfirmPaymentCommand(paymentId));
+        return commandGateway.send(new ConfirmPaymentCommand(paymentId), Void.class);
     }
 
     @PostMapping("rejectPayment")
     public CompletableFuture<Void> rejectPayment(@RequestParam("id") String paymentId) {
-        return commandGateway.send(new RejectPaymentCommand(paymentId));
+        return commandGateway.send(new RejectPaymentCommand(paymentId), Void.class);
     }
 
 
@@ -186,16 +186,16 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
 
     private Mono<String> executeRentalCycle(String bikeType, String renter, int abandonPaymentFactor, int delay) {
         CompletableFuture<String> result = selectRandomAvailableBike(bikeType)
-                .thenCompose(bikeId -> commandGateway.send(new RequestBikeCommand(bikeId, renter))
+                .thenCompose(bikeId -> commandGateway.send(new RequestBikeCommand(bikeId, renter), String.class)
                                                      .thenComposeAsync(paymentRef -> executePayment(bikeId,
-                                                                                                    (String) paymentRef,
+                                                                                                    paymentRef,
                                                                                                     abandonPaymentFactor),
                                                                        CompletableFuture.delayedExecutor(randomDelay(
                                                                                delay), TimeUnit.MILLISECONDS))
                                                      .thenCompose(r -> whenBikeUnlocked(bikeId))
                                                      .thenComposeAsync(r -> commandGateway.send(new ReturnBikeCommand(
                                                                                bikeId,
-                                                                               randomLocation())),
+                                                                               randomLocation()), Void.class),
                                                                        CompletableFuture.delayedExecutor(randomDelay(
                                                                                delay), TimeUnit.MILLISECONDS))
                                                      .thenApply(r -> bikeId));
@@ -243,7 +243,7 @@ See https://html.spec.whatwg.org/multipage/server-sent-events.html#the-eventsour
                           .filter(Objects::nonNull)
                           .doOnNext(n -> queryResult.close())
                           .next()
-                          .flatMap(paymentId -> Mono.fromFuture(commandGateway.send(new ConfirmPaymentCommand(paymentId))))
+                          .flatMap(paymentId -> Mono.fromFuture(commandGateway.send(new ConfirmPaymentCommand(paymentId), Void.class)))
                           .map(o -> bikeId)
                           .toFuture();
     }

@@ -34,12 +34,12 @@ public class PaymentController {
 
     @PostMapping("/acceptPayment")
     public CompletableFuture<Void> confirmPayment(@RequestParam("id") String paymentId) {
-        return commandGateway.send(new ConfirmPaymentCommand(paymentId));
+        return commandGateway.send(new ConfirmPaymentCommand(paymentId), Void.class);
     }
 
     @PostMapping("/rejectPayment")
     public CompletableFuture<Void> rejectPayment(@RequestParam("id") String paymentId) {
-        return commandGateway.send(new RejectPaymentCommand(paymentId));
+        return commandGateway.send(new RejectPaymentCommand(paymentId), Void.class);
     }
 
     @GetMapping("/status")
